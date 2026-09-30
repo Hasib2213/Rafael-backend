@@ -1,0 +1,633 @@
+{
+	"info": {
+		"_postman_id": "curio-backend-api-collection-2026",
+		"name": "Curio / Rafael Backend API (Port 8055)",
+		"description": "Complete Postman collection for Curio AI Video Briefing Platform Django REST API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8055/api",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Login (Demo User)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.access) {",
+									"    pm.collectionVariables.set('access_token', jsonData.access);",
+									"    console.log('Access token saved to collection variable!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"abir07@gmail.com\",\n  \"password\": \"user123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login", ""]
+						}
+					}
+				},
+				{
+					"name": "Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.access) {",
+									"    pm.collectionVariables.set('access_token', jsonData.access);",
+									"    console.log('Admin access token saved to collection variable!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@curio.ai\",\n  \"password\": \"admin123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login", ""]
+						}
+					}
+				},
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"pass123456\",\n  \"confirm_password\": \"pass123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/profile/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "profile", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Abir\",\n  \"last_name\": \"Hossain\",\n  \"phone\": \"+8801498978089\",\n  \"company\": \"Orange Ltd\",\n  \"position\": \"Product Manager\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/profile/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "profile", ""]
+						}
+					}
+				},
+				{
+					"name": "Forgot Password (Request OTP)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"abir07@gmail.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/forgot-password/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "forgot-password", ""]
+						}
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"abir07@gmail.com\",\n  \"otp\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/verify-otp/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "verify-otp", ""]
+						}
+					}
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"abir07@gmail.com\",\n  \"otp\": \"123456\",\n  \"password\": \"user123456\",\n  \"confirm_password\": \"user123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/reset-password/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "reset-password", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Notifications",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/notifications/",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "notifications", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Creators & Following",
+			"item": [
+				{
+					"name": "List All Creators",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/creators/?sort=recently&search=",
+							"host": ["{{base_url}}"],
+							"path": ["creators", ""],
+							"query": [
+								{
+									"key": "sort",
+									"value": "recently"
+								},
+								{
+									"key": "search",
+									"value": ""
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Followed Creators",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/creators/following/",
+							"host": ["{{base_url}}"],
+							"path": ["creators", "following", ""]
+						}
+					}
+				},
+				{
+					"name": "Add Creator by YouTube URL",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://youtube.com/@mkbhd\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/creators/add/",
+							"host": ["{{base_url}}"],
+							"path": ["creators", "add", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. AI Briefings",
+			"item": [
+				{
+					"name": "List Daily Briefings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/briefings/?timeframe=daily",
+							"host": ["{{base_url}}"],
+							"path": ["briefings", ""],
+							"query": [
+								{
+									"key": "timeframe",
+									"value": "daily"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "List Weekly Briefings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/briefings/?timeframe=weekly",
+							"host": ["{{base_url}}"],
+							"path": ["briefings", ""],
+							"query": [
+								{
+									"key": "timeframe",
+									"value": "weekly"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Library (Bookmarks)",
+			"item": [
+				{
+					"name": "Get Saved Library",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/library/?sort=recently",
+							"host": ["{{base_url}}"],
+							"path": ["library", ""],
+							"query": [
+								{
+									"key": "sort",
+									"value": "recently"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Subscriptions & Billing",
+			"item": [
+				{
+					"name": "List Plans",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/subscriptions/plans/",
+							"host": ["{{base_url}}"],
+							"path": ["subscriptions", "plans", ""]
+						}
+					}
+				},
+				{
+					"name": "My Subscription Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/subscriptions/my-status/",
+							"host": ["{{base_url}}"],
+							"path": ["subscriptions", "my-status", ""]
+						}
+					}
+				},
+				{
+					"name": "Checkout Process",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"plan_id\": \"pro\",\n  \"first_name\": \"Abir\",\n  \"last_name\": \"Hossain\",\n  \"email\": \"abir07@gmail.com\",\n  \"phone\": \"+8801498978089\",\n  \"country\": \"Bangladesh\",\n  \"address\": \"Dhaka, Bangladesh\",\n  \"card_brand\": \"visa\",\n  \"card_number\": \"4242424242424242\",\n  \"card_expiry\": \"12/28\",\n  \"card_cvc\": \"123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/subscriptions/checkout/",
+							"host": ["{{base_url}}"],
+							"path": ["subscriptions", "checkout", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Billing Transactions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/subscriptions/transactions/",
+							"host": ["{{base_url}}"],
+							"path": ["subscriptions", "transactions", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Platform Settings & Contact",
+			"item": [
+				{
+					"name": "Get Settings (Terms, Privacy, Social)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/settings/",
+							"host": ["{{base_url}}"],
+							"path": ["settings", ""]
+						}
+					}
+				},
+				{
+					"name": "Submit Contact Form",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Hasibul Islam\",\n  \"email\": \"hasibul@example.com\",\n  \"subject\": \"General Inquiry\",\n  \"message\": \"I would like to know more about the Curio AI audio briefings.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/settings/contact/",
+							"host": ["{{base_url}}"],
+							"path": ["settings", "contact", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Admin Dashboard & Telemetry",
+			"item": [
+				{
+					"name": "Dashboard Telemetry Stats",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/analytics/dashboard/",
+							"host": ["{{base_url}}"],
+							"path": ["analytics", "dashboard", ""]
+						}
+					}
+				},
+				{
+					"name": "Activity Audit Logs",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/analytics/audit-logs/?plan=ALL&search=",
+							"host": ["{{base_url}}"],
+							"path": ["analytics", "audit-logs", ""],
+							"query": [
+								{
+									"key": "plan",
+									"value": "ALL"
+								},
+								{
+									"key": "search",
+									"value": ""
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Admin All Users List",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/admin/users/?plan=ALL&search=",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "admin", "users", ""],
+							"query": [
+								{
+									"key": "plan",
+									"value": "ALL"
+								},
+								{
+									"key": "search",
+									"value": ""
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

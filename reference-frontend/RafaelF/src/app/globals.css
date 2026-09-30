@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-lato), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-manrope: var(--font-manrope), sans-serif;
+
+  --color-brand-dark: #0F172A;
+  --color-brand-card: #2B2A7D;
+  --color-brand-glow: #CB52FF;
+  --color-brand-star: #FFB216;
+  --color-text-dim: #D0D0D0;
+}
+
+:root {
+  --background: #0F172A;
+  --foreground: #FFFFFF;
+}
+
+body {
+  background-color: #0F172A;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+}
+
+/* Figma exact gradients */
+.bg-figma-card {
+  background: linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+}
+
+.bg-figma-card-overlay {
+  background: linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%), #2B2A7D;
+}
+
+.bg-figma-btn {
+  background: linear-gradient(89.44deg, #2563EB -47.4%, #7A3BED 76.5%, #A842D4 101.93%);
+}
+
+.bg-figma-btn:hover {
+  background: linear-gradient(89.44deg, #1d4ed8 -47.4%, #6d28d9 76.5%, #9333ea 101.93%);
+}
+
+.bg-figma-primary {
+  background: linear-gradient(90deg, #2B7FFF 0%, #4F39F6 100%);
+}
+
+.text-gradient-figma {
+  background: linear-gradient(89.44deg, #2563EB -47.4%, #7A3BED 76.5%, #A842D4 101.93%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Rectangle 2386 - Figma Modal Backdrop Blur Overlay */
+.figma-backdrop-overlay {
+  background-color: rgba(0, 0, 0, 0.71) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+::-webkit-scrollbar-thumb {
+  background: #2B2A7D;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7A3BED;
+}

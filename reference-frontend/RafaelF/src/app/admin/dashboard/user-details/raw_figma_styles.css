@@ -1,0 +1,552 @@
+/* ==========================================================================
+   Desktop - 23 (User Details / View Details Page from Admin Recent Activity)
+   Raw Figma CSS collected from User
+   ========================================================================== */
+
+/* Main Container Frame Desktop - 23 */
+.desktop-23-canvas {
+  position: relative;
+  width: 1440px;
+  min-height: 1388px;
+  background: #0F172A;
+}
+
+/* Nav Header */
+.details-nav {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0px 24px;
+  gap: 24px;
+  position: absolute;
+  width: 1200px;
+  height: 80px;
+  left: calc(50% - 1200px/2 + 120px);
+  top: 0px;
+  background: linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(79, 57, 246, 0.2) 0%, rgba(43, 127, 255, 0.2) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0px 1px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Nav Profile Container (Frame 2147239857) */
+.nav-profile-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 20px;
+  width: 135px;
+  height: 44px;
+}
+
+/* Nav Profile Badge (Frame 2147227759) */
+.nav-profile-badge {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 16px;
+  width: 135px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.nav-profile-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 119px;
+  height: 37px;
+}
+
+.nav-profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nav-profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 79px;
+  height: 37px;
+}
+
+.nav-profile-name {
+  width: 79px;
+  height: 21px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 150%;
+  color: #FFFFFF;
+  margin: -2px 0px;
+}
+
+.nav-profile-role {
+  width: 35px;
+  height: 18px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 150%;
+  color: #D0D0D0;
+}
+
+
+/* Side Panel */
+.side-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 4px;
+  position: absolute;
+  width: 240px;
+  height: 806px;
+  left: 0px;
+  top: 0px;
+  background: linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0px;
+}
+
+/* Side Panel Header & Logo (Frame 6) */
+.side-panel-header {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 0px 16px;
+  gap: 8px;
+  margin: 0 auto;
+  width: 208px;
+  height: 64px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Side Panel Navigation Items Container (Frame 2147239856) */
+.side-panel-nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 0px;
+  gap: 120px;
+  margin: 0 auto;
+  width: 208px;
+  height: 710px;
+}
+
+.side-nav-menu-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  margin: 0 auto;
+  width: 208px;
+  height: 288px;
+}
+
+.side-nav-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 0px 0px 16px;
+  gap: 12px;
+  width: 208px;
+  height: 48px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #FFFFFF;
+}
+
+.side-nav-btn.active {
+  padding: 0px 0px 0px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-left: 4px solid #2563EB;
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+}
+
+/* Logout Item (Frame 2147239891) */
+.side-logout-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 0px 0px 10px;
+  gap: 12px;
+  width: 208px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-left: 3px solid #FF5B5B;
+  border-radius: 8px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #FFFFFF;
+}
+
+
+/* Main Content Area (Frame 2147240235) */
+.main-content-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 24px;
+  position: absolute;
+  width: 1152px;
+  height: 1210px;
+  left: 264px;
+  top: 104px;
+}
+
+/* Profile Card (Frame 2147240232) */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 0px 24px;
+  gap: 24px;
+  width: 1152px;
+  height: 410px;
+  background: linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+  border-radius: 16px;
+}
+
+/* Cover Banner (Rectangle 361) */
+.profile-cover-banner {
+  width: 1152px;
+  height: 129px;
+  border-radius: 16px 16px 0px 0px;
+}
+
+/* Avatar Container (Frame 2147225842) */
+.profile-avatar-circle {
+  box-sizing: border-box;
+  width: 200px;
+  height: 200px;
+  border: 1px solid #FFFFFF;
+  border-radius: 200px;
+}
+
+/* Profile User Info Text Styles */
+.user-name-title {
+  width: 194px;
+  height: 42px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 32px;
+  line-height: 130%;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+}
+
+.user-sub-info {
+  width: 194px;
+  height: 24px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 150%;
+  letter-spacing: -0.02em;
+  color: #D0D0D0;
+}
+
+/* Suspend User Button (Component 50) */
+.btn-suspend-user {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 11px 16px;
+  gap: 8px;
+  width: 161px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid #FF5B5B;
+  border-radius: 6px;
+  color: #FFFFFF;
+  font-family: 'Lato', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Statistics Cards Row (Frame 2147227571) */
+.stats-cards-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 20px;
+  width: 1152px;
+  height: 112px;
+}
+
+.stat-card-item {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20px 16px;
+  gap: 16px;
+  width: 273px;
+  height: 112px;
+  background: linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+  box-shadow: 6px 6px 54px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+}
+
+.stat-card-amount {
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 140%;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+}
+
+.stat-card-category {
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 150%;
+  color: #FFFFFF;
+}
+
+.stat-icon-badge {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 11px 12px;
+  gap: 10px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 239, 223, 0.3);
+  border-radius: 8px;
+}
+
+/* Card 2: Channels Following (Replaces Total Played per user request)
+   - Amount: 220 (width: 41px, height: 34px, font: 'Lato', 500, 24px)
+   - Icon: ph:video (vector width: 19px, height: 16px, background: #FEFEFE in 40x40 Layer_1 badge)
+   - Category: Channels Following (width: 241px, height: 24px, font: 'Lato', 500, 16px, color: #FFFFFF)
+*/
+
+/* Lower Section 2-Column Split (Frame 2147240236) */
+.lower-split-section {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 24px;
+  width: 1152px;
+  height: 640px;
+}
+
+/* Subscription Purchase History Column (Frame 2147240222) */
+.subscription-history-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 16px;
+  width: 718px;
+  height: 640px;
+}
+
+.section-heading-h2 {
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 140%;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+}
+
+.subscription-table-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 718px;
+  height: 528px;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+  border-radius: 16px;
+}
+
+.subscription-table-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 16px;
+  width: 718px;
+  height: 52px;
+  background: rgba(43, 127, 255, 0.3);
+  border-radius: 16px 16px 0px 0px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  text-transform: uppercase;
+  color: #FFFFFF;
+}
+
+.subscription-table-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 16px;
+  width: 718px;
+  height: 68px;
+  background: linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+}
+
+.subscription-table-row-alt {
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+}
+
+.plan-badge-pill {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 12px;
+  gap: 4px;
+  width: 118px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: #FFFFFF;
+}
+
+/* Pagination Footer */
+.table-pagination-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  width: 718px;
+  height: 40px;
+}
+
+.pagination-btn-nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 8px;
+  gap: 4px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.pagination-btn-page {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 10px;
+  width: 30px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+.pagination-btn-page.active {
+  background: linear-gradient(90deg, #2B7FFF 0%, #4F39F6 100%);
+}
+
+/* Right Sidebar: Recent Activity (Frame 2147240238) */
+.user-recent-activity-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 16px;
+  width: 410px;
+  height: 542px;
+}
+
+.user-activity-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 24px;
+  width: 410px;
+  min-height: 492px;
+  background: linear-gradient(0deg, #2B2A7D, #2B2A7D), linear-gradient(90deg, rgba(43, 127, 255, 0.2) 0%, rgba(79, 57, 246, 0.2) 100%);
+  border-radius: 16px;
+}
+
+.user-activity-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  gap: 12px;
+  width: 362px;
+  height: 68px;
+}
+
+.activity-title {
+  font-family: 'Lato', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 150%;
+  color: #FFFFFF;
+}
+
+.activity-subtitle {
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 150%;
+  color: #D0D0D0;
+}
+
+.activity-timestamp {
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 150%;
+  color: #D0D0D0;
+}
+
+.activity-divider {
+  width: 362px;
+  height: 0px;
+  border: 0.5px solid #61758A;
+}
+
