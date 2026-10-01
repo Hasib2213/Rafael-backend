@@ -10,3 +10,4 @@ urlpatterns = [
     path('<uuid:pk>/', BriefingDetailView.as_view(), name='briefing_detail'),
     path('<uuid:pk>/listen/', BriefingRecordListenView.as_view(), name='briefing_listen'),
 ]
+

@@ -54,3 +54,4 @@ class BriefingRecordListenView(APIView):
             return Response({"listens_count": briefing.listens_count}, status=status.HTTP_200_OK)
         except Briefing.DoesNotExist:
             return Response({"detail": "Briefing not found."}, status=status.HTTP_404_NOT_FOUND)
+

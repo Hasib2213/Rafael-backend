@@ -87,9 +87,15 @@ class ActivityAuditLogListView(generics.ListAPIView):
         queryset = ActivityAuditLog.objects.all().select_related('user')
         plan = self.request.query_params.get('plan')
         search = self.request.query_params.get('search')
+        user_id = self.request.query_params.get('user_id')
+
+
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
 
         if plan and plan.upper() != 'ALL':
             queryset = queryset.filter(user__plan__iexact=plan)
+
 
         if search:
             queryset = queryset.filter(

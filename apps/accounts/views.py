@@ -2,10 +2,12 @@ import random
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import models
 from django.contrib.auth import get_user_model
 from apps.accounts.models import PasswordResetOTP, Notification
+from core.cloudinary_utils import upload_image, delete_from_cloudinary
 from apps.accounts.serializers import (
     UserSerializer,
     RegisterSerializer,
@@ -20,6 +22,7 @@ from apps.accounts.serializers import (
 )
 
 User = get_user_model()
+
 
 
 
@@ -54,6 +57,76 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         if self.request.method in ['PUT', 'PATCH']:
             return ProfileUpdateSerializer
         return UserSerializer
+
+
+class AvatarUploadView(APIView):
+    """Upload user avatar to Cloudinary."""
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get('avatar')
+        if not file:
+            return Response(
+                {"detail": "No avatar file provided. Send 'avatar' as form-data."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        if file.content_type not in allowed_types:
+            return Response(
+                {"detail": f"Invalid file type '{file.content_type}'. Allowed: JPEG, PNG, WebP, GIF."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate file size (max 5MB)
+        if file.size > 5 * 1024 * 1024:
+            return Response(
+                {"detail": "File size exceeds 5MB limit."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Upload to Cloudinary
+            result = upload_image(
+                file,
+                folder='avatars',
+                public_id=f"user_{request.user.id}",
+                overwrite=True,
+            )
+
+            # Save the Cloudinary URL to user profile
+            user = request.user
+            user.avatar_url = result['secure_url']
+            user.save(update_fields=['avatar_url'])
+
+            return Response({
+                "message": "Avatar uploaded successfully!",
+                "avatar_url": result['secure_url'],
+                "public_id": result['public_id'],
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Upload failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def delete(self, request, *args, **kwargs):
+        """Remove user avatar from Cloudinary."""
+        user = request.user
+        if user.avatar_url:
+            try:
+                public_id = f"rafael/avatars/user_{user.id}"
+                delete_from_cloudinary(public_id, resource_type='image')
+            except Exception:
+                pass  # Don't fail if Cloudinary deletion fails
+
+        user.avatar_url = ''
+        user.save(update_fields=['avatar_url'])
+        return Response({"message": "Avatar removed successfully."}, status=status.HTTP_200_OK)
+
 
 
 class ChangePasswordView(APIView):
