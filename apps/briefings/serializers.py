@@ -6,6 +6,7 @@ from apps.library.models import SavedItem
 class BriefingSerializer(serializers.ModelSerializer):
     channel_name = serializers.CharField(source='creator.name', default='Curio Creator', read_only=True)
     channel_handle = serializers.CharField(source='creator.handle', default='', read_only=True)
+    channel_avatar_url = serializers.CharField(source='creator.avatar_url', default='', read_only=True)
     channel_avatar_color = serializers.CharField(source='creator.avatar_gradient', default='from-purple-600 to-indigo-600', read_only=True)
     channel_initials = serializers.CharField(source='creator.initials', default='C', read_only=True)
     subscribers = serializers.CharField(source='creator.subscriber_count', default='1M subscribers', read_only=True)
@@ -15,7 +16,7 @@ class BriefingSerializer(serializers.ModelSerializer):
         model = Briefing
         fields = [
             'id', 'title', 'youtube_url', 'duration', 'thumbnail_url',
-            'channel_name', 'channel_handle', 'channel_avatar_color',
+            'channel_name', 'channel_handle', 'channel_avatar_url', 'channel_avatar_color',
             'channel_initials', 'subscribers',
             'summary', 'full_summary', 'key_takeaways',
             'audio_url', 'timeframe', 'category',

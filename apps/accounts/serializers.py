@@ -39,6 +39,20 @@ class UserSerializer(serializers.ModelSerializer):
             return BillingTransactionSerializer(txs, many=True).data
         return []
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.avatar:
+            try:
+                url = instance.avatar.url
+                data['avatar'] = url
+                if not data.get('avatar_url'):
+                    data['avatar_url'] = url
+            except Exception:
+                pass
+        elif instance.avatar_url:
+            data['avatar'] = instance.avatar_url
+        return data
+
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -90,6 +104,18 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'phone', 'address', 'company', 'position', 'avatar']
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        if instance.avatar:
+            try:
+                cloudinary_url = instance.avatar.url
+                if instance.avatar_url != cloudinary_url:
+                    instance.avatar_url = cloudinary_url
+                    instance.save(update_fields=['avatar_url'])
+            except Exception:
+                pass
+        return instance
 
 
 class AdminUserUpdateSerializer(serializers.ModelSerializer):

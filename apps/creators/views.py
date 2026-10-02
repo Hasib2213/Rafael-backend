@@ -104,33 +104,8 @@ class AddCreatorByUrlView(APIView):
         serializer.is_valid(raise_exception=True)
         url = serializer.validated_data['url'].strip()
 
-        # Parse channel name or handle from URL
-        clean_handle = "@newcreator"
-        name = "New Creator"
-        if "@" in url:
-            parts = url.split("@")
-            clean_handle = "@" + parts[1].split("/")[0].split("?")[0]
-            name = clean_handle.replace("@", "").replace(".", " ").title()
-        elif "youtube.com/" in url:
-            slug = url.split("youtube.com/")[1].split("/")[0].split("?")[0]
-            clean_handle = f"@{slug.lower()}"
-            name = slug.replace(".", " ").title()
-
-        creator, created = Creator.objects.get_or_create(
-            handle=clean_handle,
-            defaults={
-                'name': name,
-                'channel_url': url,
-                'avatar_url': "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80",
-                'initials': name[:2].upper(),
-                'description': f"Official YouTube channel for {name}. AI summaries and daily briefings synced automatically.",
-                'subscriber_count': "1.2M subscribers",
-                'video_count': 12,
-            }
-        )
-
-        # Auto follow for the user who added it
-        CreatorFollow.objects.get_or_create(user=request.user, creator=creator)
+        from core.briefing_pipeline import process_add_creator
+        creator, created = process_add_creator(request.user, url, run_background_briefing=True)
 
         return Response({
             "message": f"Channel {creator.name} added and followed successfully!",

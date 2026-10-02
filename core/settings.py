@@ -83,7 +83,7 @@ if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
-            conn_max_age=600,
+            conn_max_age=0,
             ssl_require=True
         )
     }
@@ -143,7 +143,17 @@ cloudinary.config(
     secure=True
 )
 
-# Use Cloudinary as default storage for all media files
+# Use Cloudinary as default storage for all media files (Django 4.2+ / 5+ / 6+)
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+# Keep DEFAULT_FILE_STORAGE for backward compatibility
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -178,3 +188,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:[0-9]+$",
     r"^http://127\.0\.0\.1:[0-9]+$",
 ]
+
+# AI and YouTube Integrations
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('gemini-api-key', '')
