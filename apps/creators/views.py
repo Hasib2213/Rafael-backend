@@ -40,12 +40,22 @@ class CreatorDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_object(self):
-        lookup = self.kwargs.get('pk_or_handle')
+        lookup = self.kwargs.get('pk_or_handle', '').strip()
+        import uuid
         try:
-            return Creator.objects.get(pk=lookup)
-        except (Creator.DoesNotExist, ValueError):
+            uuid_obj = uuid.UUID(str(lookup))
+            return Creator.objects.get(pk=uuid_obj)
+        except (ValueError, TypeError, Creator.DoesNotExist):
             clean_handle = lookup if lookup.startswith('@') else f"@{lookup}"
-            return generics.get_object_or_404(Creator, handle__iexact=clean_handle)
+            creator = Creator.objects.filter(
+                Q(handle__iexact=clean_handle) |
+                Q(handle__iexact=lookup) |
+                Q(name__iexact=lookup)
+            ).first()
+            if not creator:
+                from django.http import Http404
+                raise Http404("Creator not found.")
+            return creator
 
 
 class FollowingCreatorsListView(generics.ListAPIView):
@@ -74,10 +84,19 @@ class FollowToggleView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk, *args, **kwargs):
+        import uuid
         try:
-            creator = Creator.objects.get(pk=pk)
-        except Creator.DoesNotExist:
-            return Response({"detail": "Creator not found."}, status=status.HTTP_404_NOT_FOUND)
+            uuid_obj = uuid.UUID(str(pk))
+            creator = Creator.objects.get(pk=uuid_obj)
+        except (ValueError, TypeError, Creator.DoesNotExist):
+            clean_handle = pk if pk.startswith('@') else f"@{pk}"
+            creator = Creator.objects.filter(
+                Q(handle__iexact=clean_handle) |
+                Q(handle__iexact=pk) |
+                Q(name__iexact=pk)
+            ).first()
+            if not creator:
+                return Response({"detail": "Creator not found."}, status=status.HTTP_404_NOT_FOUND)
 
         follow_obj = CreatorFollow.objects.filter(user=request.user, creator=creator).first()
         if follow_obj:

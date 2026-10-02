@@ -24,7 +24,17 @@ class BriefingListView(generics.ListCreateAPIView):
             queryset = queryset.filter(category__iexact=category)
 
         if creator_id:
-            queryset = queryset.filter(creator_id=creator_id)
+            import uuid
+            try:
+                uuid_obj = uuid.UUID(str(creator_id))
+                queryset = queryset.filter(creator_id=uuid_obj)
+            except (ValueError, TypeError):
+                clean_handle = creator_id if creator_id.startswith('@') else f"@{creator_id}"
+                queryset = queryset.filter(
+                    Q(creator__handle__iexact=clean_handle) |
+                    Q(creator__handle__iexact=creator_id) |
+                    Q(creator__name__icontains=creator_id)
+                )
 
         if search:
             queryset = queryset.filter(
