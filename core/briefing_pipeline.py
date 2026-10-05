@@ -55,7 +55,7 @@ def generate_briefing_for_video(creator, video_data):
             full_summary=ai_res.get('full_summary', ''),
             key_takeaways=ai_res.get('key_takeaways', []),
             audio_url=audio_url,
-            timeframe='daily',
+            timeframe='both',
             category=ai_res.get('category', 'Technology')
         )
         print(f"[Pipeline] Successfully generated briefing for '{briefing.title}' with audio: {bool(audio_url)}")

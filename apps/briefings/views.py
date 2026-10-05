@@ -17,8 +17,15 @@ class BriefingListView(generics.ListCreateAPIView):
         category = self.request.query_params.get('category')
         creator_id = self.request.query_params.get('creator_id')
 
-        if timeframe in ['daily', 'weekly']:
-            queryset = queryset.filter(Q(timeframe=timeframe) | Q(timeframe='both'))
+        if timeframe == 'daily':
+            queryset = queryset.filter(Q(timeframe='daily') | Q(timeframe='both'))
+        elif timeframe == 'weekly':
+            from django.utils import timezone
+            from datetime import timedelta
+            one_week_ago = timezone.now() - timedelta(days=7)
+            queryset = queryset.filter(
+                Q(timeframe='weekly') | Q(timeframe='both') | Q(created_at__gte=one_week_ago)
+            )
 
         if category:
             queryset = queryset.filter(category__iexact=category)
