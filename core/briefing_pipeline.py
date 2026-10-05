@@ -132,3 +132,40 @@ def process_add_creator(user, url, run_background_briefing=True):
         generate_creator_briefings_background(creator, creator_dict)
 
     return creator, created
+
+
+def sync_all_creators_briefings(max_videos_per_creator=1):
+    """
+    Checks all creators in the system, fetches their latest videos,
+    and automatically generates AI briefings for any new video not yet in database.
+    """
+    yt = YouTubeService()
+    creators = Creator.objects.all()
+    created_briefings = []
+
+    print(f"[SyncWorker] Checking for new YouTube videos across {creators.count()} creators...")
+    for creator in creators:
+        try:
+            creator_dict = {
+                'handle': creator.handle,
+                'channel_url': creator.channel_url,
+                'name': creator.name,
+            }
+            latest_videos = yt.fetch_latest_videos(creator_dict, max_results=max_videos_per_creator)
+            for vid in latest_videos:
+                vid_url = vid.get('youtube_url')
+                if not vid_url:
+                    continue
+                # Check if briefing already exists in DB
+                if Briefing.objects.filter(youtube_url=vid_url).exists():
+                    continue
+
+                print(f"[SyncWorker] New video found for {creator.name}: '{vid.get('title')}'. Generating briefing...")
+                b = generate_briefing_for_video(creator, vid)
+                if b:
+                    created_briefings.append(b)
+        except Exception as e:
+            print(f"[SyncWorker] Error syncing creator {creator.name}: {e}")
+
+    print(f"[SyncWorker] Sync complete! Generated {len(created_briefings)} new briefings.")
+    return created_briefings

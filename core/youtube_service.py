@@ -273,8 +273,13 @@ class YouTubeService:
             channel_url = creator_data.get('channel_url') or f"https://www.youtube.com/{clean_handle}"
             if not channel_url.startswith('http'):
                 channel_url = f"https://www.youtube.com/{clean_handle}"
+            
+            target_url = channel_url.rstrip('/')
+            if not target_url.endswith('/videos'):
+                target_url = f"{target_url}/videos"
+
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(channel_url, download=False)
+                info = ydl.extract_info(target_url, download=False)
                 entries = info.get('entries', [])
                 for entry in entries:
                     vid_id = entry.get('id')

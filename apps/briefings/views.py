@@ -65,3 +65,23 @@ class BriefingRecordListenView(APIView):
         except Briefing.DoesNotExist:
             return Response({"detail": "Briefing not found."}, status=status.HTTP_404_NOT_FOUND)
 
+
+
+class BriefingSyncTriggerView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        import threading
+        from core.briefing_pipeline import sync_all_creators_briefings
+
+        # Run in thread so API responds instantly
+        t = threading.Thread(
+            target=sync_all_creators_briefings,
+            kwargs={'max_videos_per_creator': 1},
+            daemon=True
+        )
+        t.start()
+
+        return Response({
+            "message": "Automated channel sync started in background. New briefings will appear on feed momentarily."
+        }, status=status.HTTP_200_OK)
