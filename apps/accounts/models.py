@@ -110,6 +110,7 @@ class Notification(models.Model):
     title = models.CharField(max_length=255)
     body = models.TextField()
     avatar_url = models.CharField(max_length=500, blank=True, default="/images/happy_user.png")
+    link = models.CharField(max_length=500, blank=True, default="/feed")
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

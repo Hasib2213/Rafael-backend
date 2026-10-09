@@ -101,13 +101,45 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
+    remove_avatar = serializers.BooleanField(required=False, default=False, write_only=True)
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone', 'address', 'company', 'position', 'avatar']
+        fields = ['first_name', 'last_name', 'phone', 'address', 'company', 'position', 'avatar', 'remove_avatar']
 
     def update(self, instance, validated_data):
+        remove_avatar = validated_data.pop('remove_avatar', False)
+        old_avatar = instance.avatar
+        old_avatar_url = instance.avatar_url
+
         instance = super().update(instance, validated_data)
-        if instance.avatar:
+
+        if remove_avatar:
+            try:
+                if old_avatar:
+                    old_avatar.delete(save=False)
+                elif old_avatar_url and 'res.cloudinary.com' in old_avatar_url:
+                    from core.cloudinary_utils import delete_from_cloudinary
+                    import re
+                    parts = old_avatar_url.split('/upload/')
+                    if len(parts) > 1:
+                        cleaned = re.sub(r'^v\d+/', '', parts[1])
+                        public_id = cleaned.rsplit('.', 1)[0]
+                        delete_from_cloudinary(public_id)
+            except Exception as e:
+                print(f"[Cloudinary] Error removing avatar: {e}")
+
+            instance.avatar = None
+            instance.avatar_url = ""
+            instance.save(update_fields=['avatar', 'avatar_url'])
+
+        elif 'avatar' in validated_data and instance.avatar:
+            if old_avatar and old_avatar != instance.avatar:
+                try:
+                    old_avatar.delete(save=False)
+                except Exception:
+                    pass
+
             try:
                 cloudinary_url = instance.avatar.url
                 if instance.avatar_url != cloudinary_url:
@@ -115,6 +147,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                     instance.save(update_fields=['avatar_url'])
             except Exception:
                 pass
+
         return instance
 
 
@@ -163,7 +196,7 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         from apps.accounts.models import Notification
         model = Notification
-        fields = ['id', 'title', 'body', 'avatar_url', 'is_read', 'created_at', 'time_ago']
+        fields = ['id', 'title', 'body', 'avatar_url', 'link', 'is_read', 'created_at', 'time_ago']
         read_only_fields = ['id', 'created_at']
 
     def get_time_ago(self, obj):

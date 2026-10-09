@@ -6,5 +6,6 @@ class BriefingsConfig(AppConfig):
     name = 'apps.briefings'
 
     def ready(self):
+        import apps.briefings.signals
         from core.scheduler import start_scheduler
         start_scheduler()
