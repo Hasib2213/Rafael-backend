@@ -6,8 +6,15 @@ from django.core.cache import cache
 from apps.feedback.models import Feedback
 from apps.feedback.serializers import FeedbackSerializer, SubmitFeedbackSerializer
 
+ADMIN_REVIEWS_CACHE_KEY = 'curio_admin_reviews_all'
+ADMIN_REVIEWS_CACHE_TIMEOUT = 3600  # 1 hour
 FEATURED_REVIEWS_CACHE_KEY = 'curio_featured_reviews'
 FEATURED_REVIEWS_CACHE_TIMEOUT = 3600  # 1 hour
+
+
+def invalidate_review_caches():
+    cache.delete(ADMIN_REVIEWS_CACHE_KEY)
+    cache.delete(FEATURED_REVIEWS_CACHE_KEY)
 
 
 class UserFeedbackListView(generics.ListAPIView):
@@ -26,6 +33,7 @@ class SubmitFeedbackView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         feedback = serializer.save()
+        invalidate_review_caches()
         return Response({
             "message": "Feedback submitted successfully! Thank you for helping us improve.",
             "feedback": FeedbackSerializer(feedback).data
@@ -56,6 +64,27 @@ class AdminReviewListView(generics.ListAPIView):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        search = request.query_params.get('search')
+        featured = request.query_params.get('featured')
+
+        # Cache the primary unfiltered/default admin review list
+        if not search and featured is None:
+            cached_data = cache.get(ADMIN_REVIEWS_CACHE_KEY)
+            if cached_data is not None:
+                response = Response(cached_data)
+                response['X-Cache'] = 'HIT'
+                response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                return response
+
+            response = super().list(request, *args, **kwargs)
+            cache.set(ADMIN_REVIEWS_CACHE_KEY, response.data, ADMIN_REVIEWS_CACHE_TIMEOUT)
+            response['X-Cache'] = 'MISS'
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+
+        return super().list(request, *args, **kwargs)
+
 
 class AdminToggleFeatureReviewView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -65,7 +94,7 @@ class AdminToggleFeatureReviewView(APIView):
             feedback = Feedback.objects.get(pk=pk)
             feedback.is_featured = not feedback.is_featured
             feedback.save(update_fields=['is_featured'])
-            cache.delete(FEATURED_REVIEWS_CACHE_KEY)
+            invalidate_review_caches()
             status_text = "featured" if feedback.is_featured else "unfeatured"
             return Response({
                 "message": f"Review {status_text} successfully.",
@@ -82,7 +111,7 @@ class AdminDeleteReviewView(generics.DestroyAPIView):
 
     def perform_destroy(self, instance):
         super().perform_destroy(instance)
-        cache.delete(FEATURED_REVIEWS_CACHE_KEY)
+        invalidate_review_caches()
 
 
 class FeaturedReviewListView(generics.ListAPIView):
@@ -97,11 +126,11 @@ class FeaturedReviewListView(generics.ListAPIView):
         if cached_data is not None:
             response = Response(cached_data)
             response['X-Cache'] = 'HIT'
-            response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
             return response
 
         response = super().list(request, *args, **kwargs)
         cache.set(FEATURED_REVIEWS_CACHE_KEY, response.data, FEATURED_REVIEWS_CACHE_TIMEOUT)
         response['X-Cache'] = 'MISS'
-        response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         return response
