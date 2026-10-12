@@ -23,6 +23,16 @@ class Creator(models.Model):
     def __str__(self):
         return f"{self.name} ({self.handle})"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('curio_creators_default')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('curio_creators_default')
+
 
 class CreatorFollow(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

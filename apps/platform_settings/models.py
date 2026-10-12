@@ -22,6 +22,11 @@ class PlatformSetting(models.Model):
     def __str__(self):
         return f"Platform Settings ({self.email})"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('curio_platform_settings')
+
     @classmethod
     def get_settings(cls):
         obj, created = cls.objects.get_or_create(id="00000000-0000-0000-0000-000000000001")

@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,10 +17,34 @@ from apps.subscriptions.serializers import (
 
 
 
+PLANS_CACHE_KEY = 'curio_subscription_plans'
+PLANS_CACHE_TIMEOUT = 86400  # 24 hours
+
+
 class PlanListView(generics.ListCreateAPIView):
     queryset = Plan.objects.filter(is_active=True).order_by('price')
     serializer_class = PlanSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        if not request.query_params:
+            cached_data = cache.get(PLANS_CACHE_KEY)
+            if cached_data is not None:
+                response = Response(cached_data)
+                response['X-Cache'] = 'HIT'
+                response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+                return response
+
+        response = super().list(request, *args, **kwargs)
+        if not request.query_params:
+            cache.set(PLANS_CACHE_KEY, response.data, PLANS_CACHE_TIMEOUT)
+            response['X-Cache'] = 'MISS'
+            response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+        return response
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        cache.delete(PLANS_CACHE_KEY)
 
 
 class AdminPlanDetailUpdateView(generics.RetrieveUpdateAPIView):
@@ -33,6 +58,10 @@ class AdminPlanDetailUpdateView(generics.RetrieveUpdateAPIView):
             return Plan.objects.get(pk=lookup)
         except (Plan.DoesNotExist, ValueError):
             return generics.get_object_or_404(Plan, slug=lookup)
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        cache.delete(PLANS_CACHE_KEY)
 
 
 class CheckoutProcessView(APIView):

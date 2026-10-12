@@ -8,8 +8,15 @@ class FeedbackSerializer(serializers.ModelSerializer):
     user_avatar = serializers.SerializerMethodField()
     briefing_title = serializers.CharField(source='briefing.title', read_only=True, default='')
     thumbnail = serializers.CharField(source='briefing.thumbnail_url', read_only=True, default='')
+    briefing_thumbnail = serializers.CharField(source='briefing.thumbnail_url', read_only=True, default='')
     duration = serializers.CharField(source='briefing.duration', read_only=True, default='')
+    briefing_duration = serializers.CharField(source='briefing.duration', read_only=True, default='')
     channel_name = serializers.CharField(source='briefing.creator.name', read_only=True, default='Curio Creator')
+    creator_name = serializers.CharField(source='briefing.creator.name', read_only=True, default='Curio Creator')
+    audio_url = serializers.CharField(source='briefing.audio_url', read_only=True, default='')
+    summary = serializers.CharField(source='briefing.summary', read_only=True, default='')
+    full_summary = serializers.CharField(source='briefing.full_summary', read_only=True, default='')
+    key_takeaways = serializers.JSONField(source='briefing.key_takeaways', read_only=True, default=list)
 
     def get_user_avatar(self, obj):
         if not obj.user:
@@ -26,8 +33,10 @@ class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         fields = [
-            'id', 'briefing', 'briefing_title', 'thumbnail', 'duration',
-            'channel_name', 'rating', 'useful_feedback', 'thoughts',
+            'id', 'briefing', 'briefing_title', 'thumbnail', 'briefing_thumbnail',
+            'duration', 'briefing_duration', 'channel_name', 'creator_name',
+            'audio_url', 'summary', 'full_summary', 'key_takeaways',
+            'rating', 'useful_feedback', 'thoughts',
             'request_improved', 'request_option',
             'user_name', 'user_email', 'user_avatar', 'is_platform_review', 'is_featured',
             'subtitle', 'summary_tag', 'better_version_tag', 'created_at'

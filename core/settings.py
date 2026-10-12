@@ -192,3 +192,16 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 # AI and YouTube Integrations
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('gemini-api-key', '')
+
+
+# Production Caching Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'curio-production-cache',
+        'TIMEOUT': 3600,  # 1 hour default
+        'OPTIONS': {
+            'MAX_ENTRIES': 2000,
+        }
+    }
+}

@@ -35,6 +35,16 @@ class Plan(models.Model):
     def __str__(self):
         return f"{self.name} ({self.currency}{self.price} {self.period})"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('curio_subscription_plans')
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('curio_subscription_plans')
+
 
 class Subscription(models.Model):
     STATUS_CHOICES = (

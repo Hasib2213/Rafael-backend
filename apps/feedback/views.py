@@ -2,8 +2,12 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Q
+from django.core.cache import cache
 from apps.feedback.models import Feedback
 from apps.feedback.serializers import FeedbackSerializer, SubmitFeedbackSerializer
+
+FEATURED_REVIEWS_CACHE_KEY = 'curio_featured_reviews'
+FEATURED_REVIEWS_CACHE_TIMEOUT = 3600  # 1 hour
 
 
 class UserFeedbackListView(generics.ListAPIView):
@@ -61,6 +65,7 @@ class AdminToggleFeatureReviewView(APIView):
             feedback = Feedback.objects.get(pk=pk)
             feedback.is_featured = not feedback.is_featured
             feedback.save(update_fields=['is_featured'])
+            cache.delete(FEATURED_REVIEWS_CACHE_KEY)
             status_text = "featured" if feedback.is_featured else "unfeatured"
             return Response({
                 "message": f"Review {status_text} successfully.",
@@ -74,3 +79,29 @@ class AdminDeleteReviewView(generics.DestroyAPIView):
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
+        cache.delete(FEATURED_REVIEWS_CACHE_KEY)
+
+
+class FeaturedReviewListView(generics.ListAPIView):
+    serializer_class = FeedbackSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Feedback.objects.filter(is_featured=True).select_related('user', 'briefing').order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        cached_data = cache.get(FEATURED_REVIEWS_CACHE_KEY)
+        if cached_data is not None:
+            response = Response(cached_data)
+            response['X-Cache'] = 'HIT'
+            response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+            return response
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(FEATURED_REVIEWS_CACHE_KEY, response.data, FEATURED_REVIEWS_CACHE_TIMEOUT)
+        response['X-Cache'] = 'MISS'
+        response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+        return response

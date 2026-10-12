@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -6,9 +7,35 @@ from apps.creators.models import Creator, CreatorFollow
 from apps.creators.serializers import CreatorSerializer, AddCreatorByUrlSerializer
 
 
+CREATORS_CACHE_KEY = 'curio_creators_default'
+CREATORS_CACHE_TIMEOUT = 1800  # 30 mins
+
+
 class CreatorListView(generics.ListCreateAPIView):
     serializer_class = CreatorSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        # Cache only when default listing without search query
+        is_default = not request.query_params.get('search') and request.query_params.get('sort', 'recently') == 'recently' and not request.query_params.get('page')
+        if is_default:
+            cached_data = cache.get(CREATORS_CACHE_KEY)
+            if cached_data is not None:
+                response = Response(cached_data)
+                response['X-Cache'] = 'HIT'
+                response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+                return response
+
+        response = super().list(request, *args, **kwargs)
+        if is_default:
+            cache.set(CREATORS_CACHE_KEY, response.data, CREATORS_CACHE_TIMEOUT)
+            response['X-Cache'] = 'MISS'
+            response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+        return response
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        cache.delete(CREATORS_CACHE_KEY)
 
     def get_queryset(self):
         queryset = Creator.objects.all()
@@ -38,6 +65,14 @@ class CreatorDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Creator.objects.all()
     serializer_class = CreatorSerializer
     permission_classes = [permissions.AllowAny]
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        cache.delete(CREATORS_CACHE_KEY)
+
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
+        cache.delete(CREATORS_CACHE_KEY)
 
     def get_object(self):
         lookup = self.kwargs.get('pk_or_handle', '').strip()
@@ -125,6 +160,7 @@ class AddCreatorByUrlView(APIView):
 
         from core.briefing_pipeline import process_add_creator
         creator, created = process_add_creator(request.user, url, run_background_briefing=True)
+        cache.delete(CREATORS_CACHE_KEY)
 
         return Response({
             "message": f"Channel {creator.name} added and followed successfully!",

@@ -4,10 +4,12 @@ from apps.feedback.views import (
     SubmitFeedbackView,
     AdminReviewListView,
     AdminToggleFeatureReviewView,
-    AdminDeleteReviewView
+    AdminDeleteReviewView,
+    FeaturedReviewListView
 )
 
 urlpatterns = [
+    path('featured/', FeaturedReviewListView.as_view(), name='featured_reviews'),
     path('my-feedback/', UserFeedbackListView.as_view(), name='user_feedback_list'),
     path('submit/', SubmitFeedbackView.as_view(), name='feedback_submit'),
     path('admin/reviews/', AdminReviewListView.as_view(), name='admin_review_list'),
