@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import models
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from apps.accounts.models import PasswordResetOTP, Notification
 from core.cloudinary_utils import upload_image, delete_from_cloudinary
@@ -24,6 +25,15 @@ from apps.accounts.serializers import (
 User = get_user_model()
 
 
+
+
+ADMIN_USERS_CACHE_KEY = 'curio_admin_users_all'
+ADMIN_USERS_CACHE_TIMEOUT = 120  # 2 minutes TTL
+
+
+def invalidate_admin_users_cache():
+    cache.delete(ADMIN_USERS_CACHE_KEY)
+    cache.delete('curio_dashboard_overview')
 
 
 class RegisterView(generics.CreateAPIView):
@@ -149,15 +159,24 @@ class ChangePasswordView(APIView):
         return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
 
 
+from rest_framework.pagination import PageNumberPagination
+
+class AdminUserPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class AdminUserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = AdminUserPagination
 
     def get_queryset(self):
         queryset = User.objects.all().order_by('-date_joined')
         plan = self.request.query_params.get('plan')
         search = self.request.query_params.get('search')
         suspended = self.request.query_params.get('suspended')
+        role = self.request.query_params.get('role')
 
         if plan and plan.upper() != 'ALL':
             queryset = queryset.filter(plan__iexact=plan)
@@ -170,8 +189,61 @@ class AdminUserListView(generics.ListAPIView):
         if suspended is not None:
             is_susp = suspended.lower() in ['true', '1']
             queryset = queryset.filter(is_suspended=is_susp)
+        if role:
+            if role.lower() == 'admin':
+                queryset = queryset.filter(
+                    models.Q(role__iexact='admin') |
+                    models.Q(is_staff=True) |
+                    models.Q(is_superuser=True)
+                )
+            else:
+                queryset = queryset.filter(role__iexact=role)
 
         return queryset
+
+    def list(self, request, *args, **kwargs):
+        search = request.query_params.get('search')
+        plan = request.query_params.get('plan')
+        suspended = request.query_params.get('suspended')
+        role = request.query_params.get('role')
+        page = request.query_params.get('page')
+        page_size = request.query_params.get('page_size')
+
+        # Cache only the primary default admin user list (unfiltered page 1)
+        if not search and not plan and suspended is None and not role and (not page or page == '1') and not page_size:
+            cached_data = cache.get(ADMIN_USERS_CACHE_KEY)
+            if cached_data is not None:
+                response = Response(cached_data)
+                response['X-Cache'] = 'HIT'
+                response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                return response
+
+            response = super().list(request, *args, **kwargs)
+            stats = {
+                'total_subscribers': User.objects.count(),
+                'free_users': User.objects.filter(plan__iexact='Free').count(),
+                'pro_users': User.objects.filter(plan__iexact='Pro').count(),
+                'enterprise_users': User.objects.filter(plan__iexact='Enterprise').count(),
+            }
+            if isinstance(response.data, dict):
+                response.data['stats'] = stats
+
+            cache.set(ADMIN_USERS_CACHE_KEY, response.data, ADMIN_USERS_CACHE_TIMEOUT)
+            response['X-Cache'] = 'MISS'
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+
+        response = super().list(request, *args, **kwargs)
+        stats = {
+            'total_subscribers': User.objects.count(),
+            'free_users': User.objects.filter(plan__iexact='Free').count(),
+            'pro_users': User.objects.filter(plan__iexact='Pro').count(),
+            'enterprise_users': User.objects.filter(plan__iexact='Enterprise').count(),
+        }
+        if isinstance(response.data, dict):
+            response.data['stats'] = stats
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
 
 
 class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -183,6 +255,14 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ['PUT', 'PATCH']:
             return AdminUserUpdateSerializer
         return UserSerializer
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        invalidate_admin_users_cache()
+
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
+        invalidate_admin_users_cache()
 
 
 class AdminSuspendUserToggleView(APIView):
@@ -201,6 +281,7 @@ class AdminSuspendUserToggleView(APIView):
         else:
             user.suspension_reason = ""
         user.save()
+        invalidate_admin_users_cache()
 
         status_text = "suspended" if user.is_suspended else "reactivated"
         return Response({

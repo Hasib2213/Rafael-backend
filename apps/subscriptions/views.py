@@ -32,14 +32,14 @@ class PlanListView(generics.ListCreateAPIView):
             if cached_data is not None:
                 response = Response(cached_data)
                 response['X-Cache'] = 'HIT'
-                response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+                response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
                 return response
 
         response = super().list(request, *args, **kwargs)
         if not request.query_params:
             cache.set(PLANS_CACHE_KEY, response.data, PLANS_CACHE_TIMEOUT)
             response['X-Cache'] = 'MISS'
-            response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         return response
 
     def perform_create(self, serializer):

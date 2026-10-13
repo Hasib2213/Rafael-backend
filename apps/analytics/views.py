@@ -196,7 +196,7 @@ class DashboardOverviewView(APIView):
         }
 
         # 6. Recent activities
-        recent_activities = ActivityAuditLog.objects.all().select_related('user').order_by('-created_at')[:10]
+        recent_activities = ActivityAuditLog.objects.all().select_related('user').order_by('-created_at')[:100]
 
         data = {
             'metrics': {

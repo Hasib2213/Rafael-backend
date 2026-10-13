@@ -11,11 +11,27 @@ class PlanSerializer(serializers.ModelSerializer):
             'is_active', 'features', 'free_trial_days'
         ]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        feats = data.get('features')
+        if isinstance(feats, str):
+            data['features'] = [f.strip() for f in feats.splitlines() if f.strip()]
+        elif not isinstance(feats, list):
+            data['features'] = []
+        return data
+
 
 class PlanAdminUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan
         fields = ['price', 'currency', 'features', 'is_best_offer', 'free_trial_days', 'is_popular', 'name']
+
+    def validate_features(self, value):
+        if isinstance(value, str):
+            return [f.strip() for f in value.splitlines() if f.strip()]
+        elif isinstance(value, list):
+            return [str(f).strip() for f in value if str(f).strip()]
+        return value
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):

@@ -18,10 +18,10 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'full_name',
             'phone', 'address', 'company', 'position',
             'avatar', 'avatar_url', 'role', 'plan',
-            'is_suspended', 'suspension_reason', 'is_staff', 'date_joined',
+            'is_suspended', 'suspension_reason', 'is_staff', 'is_superuser', 'is_active', 'date_joined',
             'following_count', 'saved_briefings_count', 'feedback_count', 'recent_transactions'
         ]
-        read_only_fields = ['id', 'role', 'is_staff', 'date_joined']
+        read_only_fields = ['id', 'role', 'is_staff', 'is_superuser', 'is_active', 'date_joined']
 
     def get_following_count(self, obj):
         return obj.following_creators.count() if hasattr(obj, 'following_creators') else 0
