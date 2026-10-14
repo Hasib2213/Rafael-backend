@@ -44,13 +44,14 @@ class UserSerializer(serializers.ModelSerializer):
         if instance.avatar:
             try:
                 url = instance.avatar.url
-                data['avatar'] = url
-                if not data.get('avatar_url'):
+                if url:
+                    data['avatar'] = url
                     data['avatar_url'] = url
             except Exception:
                 pass
         elif instance.avatar_url:
             data['avatar'] = instance.avatar_url
+            data['avatar_url'] = instance.avatar_url
         return data
 
 
@@ -109,16 +110,17 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         remove_avatar = validated_data.pop('remove_avatar', False)
-        old_avatar = instance.avatar
+        old_avatar_name = instance.avatar.name if instance.avatar else None
         old_avatar_url = instance.avatar_url
 
-        instance = super().update(instance, validated_data)
-
         if remove_avatar:
-            try:
-                if old_avatar:
-                    old_avatar.delete(save=False)
-                elif old_avatar_url and 'res.cloudinary.com' in old_avatar_url:
+            if old_avatar_name:
+                try:
+                    instance.avatar.storage.delete(old_avatar_name)
+                except Exception:
+                    pass
+            elif old_avatar_url and 'res.cloudinary.com' in old_avatar_url:
+                try:
                     from core.cloudinary_utils import delete_from_cloudinary
                     import re
                     parts = old_avatar_url.split('/upload/')
@@ -126,27 +128,35 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                         cleaned = re.sub(r'^v\d+/', '', parts[1])
                         public_id = cleaned.rsplit('.', 1)[0]
                         delete_from_cloudinary(public_id)
-            except Exception as e:
-                print(f"[Cloudinary] Error removing avatar: {e}")
+                except Exception as e:
+                    print(f"[Cloudinary] Error removing avatar: {e}")
 
             instance.avatar = None
             instance.avatar_url = ""
-            instance.save(update_fields=['avatar', 'avatar_url'])
+            for attr, val in validated_data.items():
+                if attr != 'avatar':
+                    setattr(instance, attr, val)
+            instance.save()
+            return instance
 
-        elif 'avatar' in validated_data and instance.avatar:
-            if old_avatar and old_avatar != instance.avatar:
+        has_new_avatar = 'avatar' in validated_data and validated_data['avatar']
+
+        instance = super().update(instance, validated_data)
+
+        if has_new_avatar and instance.avatar:
+            if old_avatar_name and old_avatar_name != instance.avatar.name:
                 try:
-                    old_avatar.delete(save=False)
+                    instance.avatar.storage.delete(old_avatar_name)
                 except Exception:
                     pass
 
             try:
                 cloudinary_url = instance.avatar.url
-                if instance.avatar_url != cloudinary_url:
+                if cloudinary_url:
                     instance.avatar_url = cloudinary_url
                     instance.save(update_fields=['avatar_url'])
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[ProfileUpdate] Error syncing avatar_url: {e}")
 
         return instance
 

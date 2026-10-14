@@ -1,3 +1,22 @@
+from django.core.cache import cache
+
+BRIEFINGS_FEED_CACHE_KEY_PREFIX = 'curio_feed_briefings'
+BRIEFINGS_CACHE_TIMEOUT = 300  # 5 minutes
+
+
+def get_briefings_cache_key(timeframe='', category='', creator_id='', search='', page=''):
+    clean_search = (search or '').strip().lower()
+    return f"{BRIEFINGS_FEED_CACHE_KEY_PREFIX}_tf{timeframe}_c{category}_cr{creator_id}_q{clean_search}_p{page}"
+
+
+def invalidate_briefings_cache():
+    for tf in ['', 'daily', 'weekly', 'both']:
+        for cat in ['', 'ai', 'tech', 'business', 'all']:
+            for p in ['', '1', '2']:
+                cache.delete(f"{BRIEFINGS_FEED_CACHE_KEY_PREFIX}_tf{tf}_c{cat}_cr_q_p{p}")
+                cache.delete(f"{BRIEFINGS_FEED_CACHE_KEY_PREFIX}_tf{tf}_c{cat}_cr__q_p{p}")
+    cache.delete('curio_dashboard_overview')
+
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,6 +28,31 @@ from apps.briefings.serializers import BriefingSerializer
 class BriefingListView(generics.ListCreateAPIView):
     serializer_class = BriefingSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        timeframe = request.query_params.get('timeframe', '')
+        category = request.query_params.get('category', '')
+        creator_id = request.query_params.get('creator_id', '')
+        search = request.query_params.get('search', '')
+        page = request.query_params.get('page', '')
+
+        cache_key = get_briefings_cache_key(timeframe, category, creator_id, search, page)
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            response = Response(cached_data)
+            response['X-Cache'] = 'HIT'
+            response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+            return response
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, BRIEFINGS_CACHE_TIMEOUT)
+        response['X-Cache'] = 'MISS'
+        response['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=300'
+        return response
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        invalidate_briefings_cache()
 
     def get_queryset(self):
         queryset = Briefing.objects.all().select_related('creator')
@@ -88,6 +132,7 @@ class BriefingSyncTriggerView(APIView):
             daemon=True
         )
         t.start()
+        invalidate_briefings_cache()
 
         return Response({
             "message": "Automated channel sync started in background. New briefings will appear on feed momentarily."

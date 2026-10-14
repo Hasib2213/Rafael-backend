@@ -27,6 +27,17 @@ User = get_user_model()
 
 
 
+
+USER_PROFILE_CACHE_TIMEOUT = 900  # 15 minutes
+
+
+def get_user_profile_cache_key(user_id):
+    return f"curio_user_profile_u{user_id}"
+
+
+def invalidate_user_profile_cache(user_id):
+    cache.delete(get_user_profile_cache_key(user_id))
+
 ADMIN_USERS_CACHE_KEY = 'curio_admin_users_all'
 ADMIN_USERS_CACHE_TIMEOUT = 120  # 2 minutes TTL
 
@@ -68,13 +79,30 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return ProfileUpdateSerializer
         return UserSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        cache_key = get_user_profile_cache_key(request.user.id)
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            response = Response(cached_data)
+            response['X-Cache'] = 'HIT'
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+
+        response = super().retrieve(request, *args, **kwargs)
+        cache.set(cache_key, response.data, USER_PROFILE_CACHE_TIMEOUT)
+        response['X-Cache'] = 'MISS'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
+
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', True)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(UserSerializer(instance, context={'request': request}).data)
+        updated_instance = serializer.save()
+        invalidate_user_profile_cache(updated_instance.id)
+        invalidate_admin_users_cache()
+        return Response(UserSerializer(updated_instance, context={'request': request}).data)
 
 
 class AvatarUploadView(APIView):
@@ -118,6 +146,8 @@ class AvatarUploadView(APIView):
             user = request.user
             user.avatar_url = result['secure_url']
             user.save(update_fields=['avatar_url'])
+            invalidate_user_profile_cache(user.id)
+            invalidate_admin_users_cache()
 
             return Response({
                 "message": "Avatar uploaded successfully!",
@@ -143,6 +173,8 @@ class AvatarUploadView(APIView):
 
         user.avatar_url = ''
         user.save(update_fields=['avatar_url'])
+        invalidate_user_profile_cache(user.id)
+        invalidate_admin_users_cache()
         return Response({"message": "Avatar removed successfully."}, status=status.HTTP_200_OK)
 
 
@@ -156,6 +188,7 @@ class ChangePasswordView(APIView):
         user = request.user
         user.set_password(serializer.validated_data['new_password'])
         user.save()
+        invalidate_user_profile_cache(user.id)
         return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
 
 
@@ -257,10 +290,12 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
         return UserSerializer
 
     def perform_update(self, serializer):
-        super().perform_update(serializer)
+        user = serializer.save()
+        invalidate_user_profile_cache(user.id)
         invalidate_admin_users_cache()
 
     def perform_destroy(self, instance):
+        invalidate_user_profile_cache(instance.id)
         super().perform_destroy(instance)
         invalidate_admin_users_cache()
 
@@ -281,6 +316,7 @@ class AdminSuspendUserToggleView(APIView):
         else:
             user.suspension_reason = ""
         user.save()
+        invalidate_user_profile_cache(user.id)
         invalidate_admin_users_cache()
 
         status_text = "suspended" if user.is_suspended else "reactivated"

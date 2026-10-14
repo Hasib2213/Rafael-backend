@@ -10,6 +10,21 @@ from apps.creators.serializers import CreatorSerializer, AddCreatorByUrlSerializ
 CREATORS_CACHE_KEY = 'curio_creators_default'
 CREATORS_CACHE_TIMEOUT = 1800  # 30 mins
 
+FOLLOWING_CACHE_TIMEOUT = 900  # 15 mins
+
+
+def get_user_following_cache_key(user_id, sort='recently', page=''):
+    return f"curio_user_following_u{user_id}_o{sort}_p{page}"
+
+
+def invalidate_user_following_cache(user_id):
+    for s in ['', 'recently', 'oldest', 'a-z', 'z-a']:
+        cache.delete(f"curio_user_following_u{user_id}_o{s}_p")
+        cache.delete(f"curio_user_following_u{user_id}_o{s}_p1")
+        cache.delete(f"curio_user_following_u{user_id}_o{s}_p2")
+    cache.delete(f"curio_user_following_u{user_id}")
+
+
 
 class CreatorListView(generics.ListCreateAPIView):
     serializer_class = CreatorSerializer
@@ -97,6 +112,25 @@ class FollowingCreatorsListView(generics.ListAPIView):
     serializer_class = CreatorSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        sort = request.query_params.get('sort', 'recently')
+        page = request.query_params.get('page', '')
+
+        cache_key = get_user_following_cache_key(user.id, sort, page)
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            response = Response(cached_data)
+            response['X-Cache'] = 'HIT'
+            response['Cache-Control'] = 'private, max-age=60, stale-while-revalidate=300'
+            return response
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, FOLLOWING_CACHE_TIMEOUT)
+        response['X-Cache'] = 'MISS'
+        response['Cache-Control'] = 'private, max-age=60, stale-while-revalidate=300'
+        return response
+
     def get_queryset(self):
         user = self.request.user
         creator_ids = CreatorFollow.objects.filter(user=user).values_list('creator_id', flat=True)
@@ -142,6 +176,9 @@ class FollowToggleView(APIView):
             CreatorFollow.objects.create(user=request.user, creator=creator)
             is_following = True
             message = f"Now following {creator.name}!"
+
+        invalidate_user_following_cache(request.user.id)
+        cache.delete(CREATORS_CACHE_KEY)
 
         return Response({
             "message": message,

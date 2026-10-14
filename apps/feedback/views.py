@@ -12,6 +12,17 @@ FEATURED_REVIEWS_CACHE_KEY = 'curio_featured_reviews'
 FEATURED_REVIEWS_CACHE_TIMEOUT = 3600  # 1 hour
 
 
+
+USER_FEEDBACK_CACHE_TIMEOUT = 900  # 15 minutes
+
+
+def get_user_feedback_cache_key(user_id):
+    return f"curio_user_feedback_u{user_id}"
+
+
+def invalidate_user_feedback_cache(user_id):
+    cache.delete(get_user_feedback_cache_key(user_id))
+
 def invalidate_review_caches():
     cache.delete(ADMIN_REVIEWS_CACHE_KEY)
     cache.delete(FEATURED_REVIEWS_CACHE_KEY)
@@ -24,6 +35,21 @@ class UserFeedbackListView(generics.ListAPIView):
     def get_queryset(self):
         return Feedback.objects.filter(user=self.request.user).select_related('briefing', 'briefing__creator')
 
+    def list(self, request, *args, **kwargs):
+        cache_key = get_user_feedback_cache_key(request.user.id)
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            response = Response(cached_data)
+            response['X-Cache'] = 'HIT'
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, USER_FEEDBACK_CACHE_TIMEOUT)
+        response['X-Cache'] = 'MISS'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
+
 
 class SubmitFeedbackView(generics.CreateAPIView):
     serializer_class = SubmitFeedbackSerializer
@@ -34,6 +60,7 @@ class SubmitFeedbackView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         feedback = serializer.save()
         invalidate_review_caches()
+        invalidate_user_feedback_cache(request.user.id)
         return Response({
             "message": "Feedback submitted successfully! Thank you for helping us improve.",
             "feedback": FeedbackSerializer(feedback).data
@@ -110,8 +137,11 @@ class AdminDeleteReviewView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_destroy(self, instance):
+        user_id = instance.user_id if instance.user else None
         super().perform_destroy(instance)
         invalidate_review_caches()
+        if user_id:
+            invalidate_user_feedback_cache(user_id)
 
 
 class FeaturedReviewListView(generics.ListAPIView):
