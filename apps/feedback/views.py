@@ -1,3 +1,4 @@
+from core.permissions import IsAdminRoleOrStaff
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -69,7 +70,7 @@ class SubmitFeedbackView(generics.CreateAPIView):
 
 class AdminReviewListView(generics.ListAPIView):
     serializer_class = FeedbackSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]
 
     def get_queryset(self):
         queryset = Feedback.objects.all().select_related('user', 'briefing')
@@ -114,7 +115,7 @@ class AdminReviewListView(generics.ListAPIView):
 
 
 class AdminToggleFeatureReviewView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]
 
     def post(self, request, pk, *args, **kwargs):
         try:

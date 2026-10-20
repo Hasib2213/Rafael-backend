@@ -1,3 +1,4 @@
+from core.permissions import IsAdminRoleOrStaff
 import random
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -56,6 +57,19 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        # Automatically log New User Registration in ActivityAuditLog
+        try:
+            from apps.analytics.models import ActivityAuditLog
+            ActivityAuditLog.objects.create(
+                user=user,
+                activity_type='New User Registered',
+                description=f"{user.get_full_name() or user.email} joined as {getattr(user, 'plan', 'Free') or 'Free'} member"
+            )
+            cache.delete('curio_admin_dashboard_overview')
+        except Exception:
+            pass
+
         return Response({
             "message": "User registered successfully!",
             "user": UserSerializer(user).data
@@ -65,6 +79,23 @@ class RegisterView(generics.CreateAPIView):
 class CustomLoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            try:
+                from apps.analytics.models import ActivityAuditLog
+                user = User.objects.filter(email=request.data.get('email')).first()
+                if user:
+                    ActivityAuditLog.objects.create(
+                        user=user,
+                        activity_type='User Login',
+                        description=f"{user.get_full_name() or user.email} logged in successfully"
+                    )
+                    cache.delete('curio_admin_dashboard_overview')
+            except Exception:
+                pass
+        return response
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
@@ -201,7 +232,7 @@ class AdminUserPagination(PageNumberPagination):
 
 class AdminUserListView(generics.ListAPIView):
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]
     pagination_class = AdminUserPagination
 
     def get_queryset(self):
@@ -282,7 +313,7 @@ class AdminUserListView(generics.ListAPIView):
 class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -301,7 +332,7 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class AdminSuspendUserToggleView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]
 
     def post(self, request, pk, *args, **kwargs):
         try:

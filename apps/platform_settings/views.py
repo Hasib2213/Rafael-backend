@@ -1,3 +1,4 @@
+from core.permissions import IsAdminRoleOrStaff
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from django.core.cache import cache
@@ -13,7 +14,7 @@ class PlatformSettingView(generics.RetrieveUpdateAPIView):
 
     def get_permissions(self):
         if self.request.method in ['PUT', 'PATCH']:
-            return [permissions.IsAuthenticated()]
+            return [IsAdminRoleOrStaff()]
         return [permissions.AllowAny()]
 
     def get_object(self):
@@ -60,4 +61,4 @@ class ContactMessageCreateView(generics.CreateAPIView):
 class AdminContactMessageListView(generics.ListAPIView):
     queryset = ContactMessage.objects.all().order_by('-created_at')
     serializer_class = ContactMessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]

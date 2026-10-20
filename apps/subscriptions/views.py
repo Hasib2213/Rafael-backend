@@ -1,3 +1,4 @@
+from core.permissions import IsAdminRoleOrStaff
 import uuid
 import logging
 from datetime import timedelta
@@ -127,6 +128,17 @@ class CheckoutProcessView(APIView):
                 payment_gateway='free'
             )
 
+            # Auto-log free subscription in ActivityAuditLog
+            try:
+                from apps.analytics.models import ActivityAuditLog
+                ActivityAuditLog.objects.create(
+                    user=request.user,
+                    activity_type='Subscription Purchase',
+                    description=f"Activated {plan.name} plan"
+                )
+            except Exception:
+                pass
+
             return Response({
                 "message": f"Free subscription activated successfully!",
                 "subscription": SubscriptionSerializer(subscription).data
@@ -240,6 +252,17 @@ def sslcommerz_success_view(request):
 
             user.plan = plan.name
             user.save(update_fields=['plan'])
+
+            # Auto-log SSLCommerz paid subscription in ActivityAuditLog
+            try:
+                from apps.analytics.models import ActivityAuditLog
+                ActivityAuditLog.objects.create(
+                    user=user,
+                    activity_type='Subscription Purchase',
+                    description=f"Purchased {plan.name} for ${plan.price}"
+                )
+            except Exception:
+                pass
 
         # Invalidate admin dashboard cache so metrics update in real-time
         cache.delete('curio_admin_dashboard_overview')

@@ -1,3 +1,4 @@
+from core.permissions import IsAdminRoleOrStaff
 from django.core.cache import cache
 
 BRIEFINGS_FEED_CACHE_KEY_PREFIX = 'curio_feed_briefings'
@@ -119,7 +120,7 @@ class BriefingRecordListenView(APIView):
 
 
 class BriefingSyncTriggerView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdminRoleOrStaff]
 
     def post(self, request, *args, **kwargs):
         import threading

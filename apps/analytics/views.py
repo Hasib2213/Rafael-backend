@@ -1,3 +1,4 @@
+from core.permissions import IsAdminRoleOrStaff
 from django.core.cache import cache
 import math
 import calendar
@@ -39,7 +40,7 @@ DASHBOARD_OVERVIEW_CACHE_KEY = 'curio_dashboard_overview'
 DASHBOARD_OVERVIEW_CACHE_TIMEOUT = 300  # 5 minutes
 
 class DashboardOverviewView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]
 
     def get(self, request, *args, **kwargs):
         requested_timeframe = request.query_params.get('timeframe')
@@ -224,16 +225,24 @@ class DashboardOverviewView(APIView):
 
 class ActivityAuditLogListView(generics.ListAPIView):
     serializer_class = ActivityAuditLogSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminRoleOrStaff]
 
     def get_queryset(self):
         queryset = ActivityAuditLog.objects.all().select_related('user').order_by('-created_at')
         plan = self.request.query_params.get('plan')
         search = self.request.query_params.get('search')
         user_id = self.request.query_params.get('user_id')
+        name = self.request.query_params.get('name')
 
         if user_id:
             queryset = queryset.filter(user_id=user_id)
+
+        if name and name.lower() not in ('user activity audit', 'all'):
+            name_parts = name.strip().split()
+            name_q = Q(user__first_name__icontains=name) | Q(user__last_name__icontains=name) | Q(user__email__icontains=name)
+            for part in name_parts:
+                name_q |= Q(user__first_name__icontains=part) | Q(user__last_name__icontains=part)
+            queryset = queryset.filter(name_q)
 
         if plan and plan.upper() != 'ALL':
             queryset = queryset.filter(user__plan__iexact=plan)
@@ -248,3 +257,41 @@ class ActivityAuditLogListView(generics.ListAPIView):
             )
 
         return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        total_events = queryset.count()
+        content_sessions = queryset.filter(
+            Q(activity_type__icontains='Audio') | Q(activity_type__icontains='Reading') |
+            Q(activity_type__icontains='Content') | Q(description__icontains='briefing') |
+            Q(description__icontains='summary')
+        ).count()
+        auth_checks = queryset.filter(
+            Q(activity_type__icontains='Login') | Q(activity_type__icontains='Registered') |
+            Q(activity_type__icontains='Auth') | Q(activity_type__icontains='Security')
+        ).count()
+        security_flags = queryset.filter(
+            Q(activity_type__icontains='Failed') | Q(activity_type__icontains='Alert') |
+            Q(activity_type__icontains='Suspend')
+        ).count()
+
+        stats = {
+            'total_events': total_events,
+            'content_sessions': content_sessions,
+            'auth_checks': auth_checks,
+            'security_flags': security_flags,
+        }
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            response.data['stats'] = stats
+            return response
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'results': serializer.data,
+            'stats': stats,
+        })
