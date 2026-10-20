@@ -205,3 +205,11 @@ CACHES = {
         }
     }
 }
+
+
+# SSLCommerz and URLs Configuration
+STORE_ID = os.getenv('STORE_ID', '')
+STORE_PASS = os.getenv('STORE_PASS', '')
+SSL_COMMERZ_SANDBOX = os.getenv('SSL_COMMERZ_SANDBOX', 'True').lower() in ('true', '1', 't')
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://127.0.0.1:8055')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')

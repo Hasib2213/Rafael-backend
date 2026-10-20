@@ -90,6 +90,10 @@ class BillingTransaction(models.Model):
     zip_code = models.CharField(max_length=30, blank=True)
     additional_info = models.TextField(blank=True)
 
+    tran_id = models.CharField(max_length=120, unique=True, null=True, blank=True)
+    val_id = models.CharField(max_length=120, null=True, blank=True)
+    payment_gateway = models.CharField(max_length=50, default="sslcommerz")
+    status = models.CharField(max_length=20, default="pending")
     card_brand = models.CharField(max_length=50, default="visa")
     card_last4 = models.CharField(max_length=10, default="2585")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
