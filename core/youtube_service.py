@@ -1,4 +1,34 @@
 import re
+import isodate
+
+def parse_iso8601_duration(duration_str):
+    """Parses ISO 8601 duration (e.g. PT14M22S, PT1H2M) into MM:SS or H:MM:SS format."""
+    if not duration_str:
+        return "10:00"
+    match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration_str)
+    if not match:
+        return "10:00"
+    hours, minutes, seconds = match.groups()
+    hours = int(hours) if hours else 0
+    minutes = int(minutes) if minutes else 0
+    seconds = int(seconds) if seconds else 0
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    return f"{minutes:02d}:{seconds:02d}"
+
+def format_seconds_duration(seconds):
+    """Formats numeric seconds into MM:SS or H:MM:SS format."""
+    if not seconds or not isinstance(seconds, (int, float)):
+        return "10:00"
+    s = int(seconds)
+    hours = s // 3600
+    minutes = (s % 3600) // 60
+    sec = s % 60
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{sec:02d}"
+    return f"{minutes:02d}:{sec:02d}"
+
+import re
 import requests
 import yt_dlp
 from django.conf import settings
@@ -239,13 +269,15 @@ class YouTubeService:
                     url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&channelId={channel_id}&order=date&type=video&maxResults={max_results}&key={self.api_key}"
 
                 res = requests.get(url, timeout=10).json()
+                raw_items = []
+                vid_ids = []
                 for item in res.get('items', []):
                     snippet = item.get('snippet', {})
                     vid_id = snippet.get('resourceId', {}).get('videoId') or item.get('id', {}).get('videoId') or item.get('id')
                     if vid_id and isinstance(vid_id, str):
                         thumbs = snippet.get('thumbnails', {})
                         thumb_url = thumbs.get('high', {}).get('url') or thumbs.get('medium', {}).get('url') or thumbs.get('default', {}).get('url') or ''
-                        videos.append({
+                        raw_items.append({
                             'video_id': vid_id,
                             'title': snippet.get('title', 'Latest Video'),
                             'youtube_url': f"https://www.youtube.com/watch?v={vid_id}",
@@ -253,6 +285,27 @@ class YouTubeService:
                             'description': snippet.get('description', ''),
                             'duration': '10:00'
                         })
+                        vid_ids.append(vid_id)
+
+                # Fetch real video durations in batch
+                if vid_ids and self.api_key:
+                    try:
+                        dur_url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id={','.join(vid_ids)}&key={self.api_key}"
+                        dur_res = requests.get(dur_url, timeout=10).json()
+                        dur_map = {}
+                        for d_item in dur_res.get('items', []):
+                            d_vid = d_item.get('id')
+                            d_str = d_item.get('contentDetails', {}).get('duration')
+                            parsed_dur = parse_iso8601_duration(d_str)
+                            if parsed_dur:
+                                dur_map[d_vid] = parsed_dur
+                        for itm in raw_items:
+                            if itm['video_id'] in dur_map:
+                                itm['duration'] = dur_map[itm['video_id']]
+                    except Exception as e:
+                        print(f"[YouTubeService] Duration batch fetch failed: {e}")
+
+                videos = raw_items
                 if videos:
                     return videos
             except Exception as e:
@@ -284,13 +337,15 @@ class YouTubeService:
                 for entry in entries:
                     vid_id = entry.get('id')
                     if vid_id:
+                        raw_dur = entry.get('duration')
+                        dur_formatted = format_seconds_duration(raw_dur)
                         videos.append({
                             'video_id': vid_id,
                             'title': entry.get('title', 'Latest Video'),
                             'youtube_url': entry.get('url') or f"https://www.youtube.com/watch?v={vid_id}",
                             'thumbnail_url': entry.get('thumbnail', ''),
                             'description': entry.get('description', ''),
-                            'duration': '10:00'
+                            'duration': dur_formatted
                         })
         except Exception as e:
             print(f"[YouTubeService] Video fetch via yt-dlp failed: {e}")
