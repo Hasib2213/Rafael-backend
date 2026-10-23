@@ -84,15 +84,12 @@ class CustomLoginView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
         if response.status_code == status.HTTP_200_OK:
             try:
-                from apps.analytics.models import ActivityAuditLog
+                from apps.analytics.geo_service import record_user_login_location
                 user = User.objects.filter(email=request.data.get('email')).first()
                 if user:
-                    ActivityAuditLog.objects.create(
-                        user=user,
-                        activity_type='User Login',
-                        description=f"{user.get_full_name() or user.email} logged in successfully"
-                    )
+                    record_user_login_location(user, request)
                     cache.delete('curio_admin_dashboard_overview')
+                    cache.delete('curio_admin_user_locations')
             except Exception:
                 pass
         return response

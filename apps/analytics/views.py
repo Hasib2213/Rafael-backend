@@ -295,3 +295,42 @@ class ActivityAuditLogListView(generics.ListAPIView):
             'results': serializer.data,
             'stats': stats,
         })
+
+
+from apps.analytics.models import UserLoginLocation
+from apps.analytics.serializers import UserLoginLocationSerializer
+
+class UserLoginLocationListView(generics.ListAPIView):
+    """
+    Returns user geographical locations worldwide for the Admin Dashboard World Map.
+    Protected with IsAdminRoleOrStaff.
+    """
+    permission_classes = [IsAdminRoleOrStaff]
+    serializer_class = UserLoginLocationSerializer
+
+    def get_queryset(self):
+        return UserLoginLocation.objects.select_related('user').filter(
+            latitude__isnull=False,
+            longitude__isnull=False
+        ).order_by('-last_login')
+
+    def list(self, request, *args, **kwargs):
+        locations = self.get_queryset()
+        plan_filter = request.query_params.get('plan')
+        if plan_filter and plan_filter.upper() != 'ALL':
+            locations = locations.filter(user__plan__iexact=plan_filter)
+
+        serializer = self.get_serializer(locations, many=True)
+        all_locs = self.get_queryset()
+        countries = set(loc.country for loc in all_locs if loc.country)
+        cities = set(loc.city for loc in all_locs if loc.city)
+
+        return Response({
+            'locations': serializer.data,
+            'summary': {
+                'total_users_mapped': all_locs.count(),
+                'active_countries': len(countries),
+                'active_cities': len(cities),
+                'countries_list': sorted(list(countries))
+            }
+        })
