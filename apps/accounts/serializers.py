@@ -65,7 +65,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'email', 'password', 'confirm_password']
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['confirm_password']:
+        if 'email' in attrs and isinstance(attrs['email'], str):
+            attrs['email'] = attrs['email'].strip().lower()
+            if User.objects.filter(email__iexact=attrs['email']).exists():
+                raise serializers.ValidationError({"email": "An account with this email address already exists."})
+        if attrs.get('password') != attrs.get('confirm_password'):
             raise serializers.ValidationError({"password": "Passwords do not match."})
         return attrs
 
@@ -82,6 +86,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
+        # Production-grade: ensure email/username is trimmed and lowercased for case-insensitive authentication
+        username_field = getattr(self, 'username_field', 'email')
+        if username_field in attrs and isinstance(attrs[username_field], str):
+            attrs[username_field] = attrs[username_field].strip().lower()
+        if 'email' in attrs and isinstance(attrs['email'], str):
+            attrs['email'] = attrs['email'].strip().lower()
+
         data = super().validate(attrs)
         if self.user.is_suspended:
             raise serializers.ValidationError({"detail": f"Account is suspended: {self.user.suspension_reason or 'Contact support'}"})
@@ -195,7 +206,11 @@ class ResetPasswordSerializer(serializers.Serializer):
         return value.strip().lower()
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['confirm_password']:
+        if 'email' in attrs and isinstance(attrs['email'], str):
+            attrs['email'] = attrs['email'].strip().lower()
+            if User.objects.filter(email__iexact=attrs['email']).exists():
+                raise serializers.ValidationError({"email": "An account with this email address already exists."})
+        if attrs.get('password') != attrs.get('confirm_password'):
             raise serializers.ValidationError({"password": "Passwords do not match."})
         return attrs
 

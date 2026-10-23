@@ -5,10 +5,14 @@ from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
+    def get_by_natural_key(self, username):
+        clean = username.strip().lower() if isinstance(username, str) else username
+        return self.get(**{f"{self.model.USERNAME_FIELD}__iexact": clean})
+
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('Email address is required')
-        email = self.normalize_email(email).lower()
+        email = self.normalize_email(email).strip().lower()
         user = self.model(email=email, **extra_fields)
         if password:
             user.set_password(password)

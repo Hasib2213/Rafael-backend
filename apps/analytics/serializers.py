@@ -6,14 +6,27 @@ class ActivityAuditLogSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='user.get_full_name', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
     plan = serializers.CharField(source='user.plan', read_only=True)
+    avatar_url = serializers.SerializerMethodField()
     date_time = serializers.SerializerMethodField()
 
     class Meta:
         model = ActivityAuditLog
         fields = [
             'id', 'name', 'email', 'plan', 'activity_type',
-            'description', 'rating', 'date_time', 'created_at'
+            'description', 'rating', 'date_time', 'created_at',
+            'avatar_url'
         ]
+
+    def get_avatar_url(self, obj):
+        if hasattr(obj, 'user') and obj.user:
+            if getattr(obj.user, 'avatar_url', None):
+                return obj.user.avatar_url
+            try:
+                if getattr(obj.user, 'avatar', None) and obj.user.avatar:
+                    return obj.user.avatar.url
+            except Exception:
+                pass
+        return ''
 
     def get_date_time(self, obj):
         return obj.created_at.strftime("%d %b, %Y %I:%M %p")

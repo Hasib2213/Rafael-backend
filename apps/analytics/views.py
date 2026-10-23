@@ -37,7 +37,7 @@ def get_y_axis_info(max_val):
 
 
 DASHBOARD_OVERVIEW_CACHE_KEY = 'curio_dashboard_overview'
-DASHBOARD_OVERVIEW_CACHE_TIMEOUT = 300  # 5 minutes
+DASHBOARD_OVERVIEW_CACHE_TIMEOUT = 604800  # 7 days (event-driven invalidation via signals)  # 5 minutes
 
 class DashboardOverviewView(APIView):
     permission_classes = [IsAdminRoleOrStaff]
@@ -51,7 +51,7 @@ class DashboardOverviewView(APIView):
             if cached_overview is not None:
                 resp = Response(cached_overview)
                 resp['X-Cache'] = 'HIT'
-                resp['Cache-Control'] = 'private, max-age=60, stale-while-revalidate=300'
+                resp['Cache-Control'] = 'private, max-age=604800, stale-while-revalidate=86400'
                 return resp
 
         now = timezone.now()
@@ -219,7 +219,7 @@ class DashboardOverviewView(APIView):
 
         resp = Response(data)
         resp['X-Cache'] = 'MISS'
-        resp['Cache-Control'] = 'private, max-age=60, stale-while-revalidate=300'
+        resp['Cache-Control'] = 'private, max-age=604800, stale-while-revalidate=86400'
         return resp
 
 
@@ -300,10 +300,14 @@ class ActivityAuditLogListView(generics.ListAPIView):
 from apps.analytics.models import UserLoginLocation
 from apps.analytics.serializers import UserLoginLocationSerializer
 
+USER_LOCATIONS_CACHE_KEY_PREFIX = 'curio_admin_user_locations'
+USER_LOCATIONS_CACHE_TIMEOUT = 604800  # 7 days (event-driven invalidation via signals)
+
 class UserLoginLocationListView(generics.ListAPIView):
     """
     Returns user geographical locations worldwide for the Admin Dashboard World Map.
     Protected with IsAdminRoleOrStaff.
+    Cached with long-lived TTL, invalidated instantly on user login.
     """
     permission_classes = [IsAdminRoleOrStaff]
     serializer_class = UserLoginLocationSerializer
@@ -315,8 +319,16 @@ class UserLoginLocationListView(generics.ListAPIView):
         ).order_by('-last_login')
 
     def list(self, request, *args, **kwargs):
+        plan_filter = request.query_params.get('plan') or 'ALL'
+        cache_key = f"{USER_LOCATIONS_CACHE_KEY_PREFIX}_{plan_filter.lower()}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            resp = Response(cached_data)
+            resp['X-Cache'] = 'HIT'
+            resp['Cache-Control'] = 'private, max-age=604800, stale-while-revalidate=86400'
+            return resp
+
         locations = self.get_queryset()
-        plan_filter = request.query_params.get('plan')
         if plan_filter and plan_filter.upper() != 'ALL':
             locations = locations.filter(user__plan__iexact=plan_filter)
 
@@ -325,7 +337,7 @@ class UserLoginLocationListView(generics.ListAPIView):
         countries = set(loc.country for loc in all_locs if loc.country)
         cities = set(loc.city for loc in all_locs if loc.city)
 
-        return Response({
+        data = {
             'locations': serializer.data,
             'summary': {
                 'total_users_mapped': all_locs.count(),
@@ -333,4 +345,9 @@ class UserLoginLocationListView(generics.ListAPIView):
                 'active_cities': len(cities),
                 'countries_list': sorted(list(countries))
             }
-        })
+        }
+        cache.set(cache_key, data, USER_LOCATIONS_CACHE_TIMEOUT)
+        resp = Response(data)
+        resp['X-Cache'] = 'MISS'
+        resp['Cache-Control'] = 'private, max-age=604800, stale-while-revalidate=86400'
+        return resp

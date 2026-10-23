@@ -29,7 +29,7 @@ User = get_user_model()
 
 
 
-USER_PROFILE_CACHE_TIMEOUT = 900  # 15 minutes
+USER_PROFILE_CACHE_TIMEOUT = 604800  # 7 days (event-driven invalidation via signals)
 
 
 def get_user_profile_cache_key(user_id):
@@ -40,7 +40,7 @@ def invalidate_user_profile_cache(user_id):
     cache.delete(get_user_profile_cache_key(user_id))
 
 ADMIN_USERS_CACHE_KEY = 'curio_admin_users_all'
-ADMIN_USERS_CACHE_TIMEOUT = 120  # 2 minutes TTL
+ADMIN_USERS_CACHE_TIMEOUT = 604800  # 7 days (event-driven invalidation via signals)
 
 
 def invalidate_admin_users_cache():

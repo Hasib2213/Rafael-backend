@@ -189,6 +189,12 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://127\.0\.0\.1:[0-9]+$",
 ]
 
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'ngrok-skip-browser-warning',
+]
+
 # AI and YouTube Integrations
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('gemini-api-key', '')
