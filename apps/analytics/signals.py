@@ -80,6 +80,8 @@ try:
     @receiver([post_save, post_delete], sender=UserLoginLocation)
     def on_location_change(sender, instance, **kwargs):
         cache.delete('curio_admin_user_locations')
+        for p in ['all', 'free', 'pro', 'enterprise']:
+            cache.delete(f'curio_admin_user_locations_{p}')
         logger.info("[CacheBuster] UserLoginLocation modified -> Cleared user locations cache.")
 except Exception as e:
     logger.warning(f"Failed to register location cache signals: {e}")
