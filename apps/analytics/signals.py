@@ -15,14 +15,22 @@ def bust_admin_dashboard_cache():
     cache.delete('curio_admin_dashboard_overview')
 
 
+def bust_location_cache():
+    """Event-driven: Invalidate all location map caches across all plans."""
+    cache.delete('curio_admin_user_locations')
+    for p in ['all', 'free', 'pro', 'enterprise']:
+        cache.delete(f'curio_admin_user_locations_{p}')
+
+
 def bust_user_profile_cache(user_id):
-    """Event-driven: Invalidate all profile cache keys for a given user."""
+    """Event-driven: Invalidate all profile cache keys for a given user and locations."""
     if not user_id:
         return
     cache.delete(f'curio_user_profile_u{user_id}')
     cache.delete(f'curio_user_profile_{user_id}')
     cache.delete('curio_admin_users_all')
     bust_admin_dashboard_cache()
+    bust_location_cache()
 
 
 @receiver([post_save, post_delete], sender=User)
@@ -79,9 +87,7 @@ try:
 
     @receiver([post_save, post_delete], sender=UserLoginLocation)
     def on_location_change(sender, instance, **kwargs):
-        cache.delete('curio_admin_user_locations')
-        for p in ['all', 'free', 'pro', 'enterprise']:
-            cache.delete(f'curio_admin_user_locations_{p}')
+        bust_location_cache()
         logger.info("[CacheBuster] UserLoginLocation modified -> Cleared user locations cache.")
 except Exception as e:
     logger.warning(f"Failed to register location cache signals: {e}")

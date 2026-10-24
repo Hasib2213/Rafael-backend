@@ -240,3 +240,15 @@ class NotificationSerializer(serializers.ModelSerializer):
             days = seconds // 86400
             return f"{days} day{'s' if days > 1 else ''} ago"
 
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    credential = serializers.CharField(required=False, allow_blank=True)
+    id_token = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        token = attrs.get('credential') or attrs.get('id_token')
+        if not token:
+            raise serializers.ValidationError('Google credential token is required.')
+        attrs['token'] = token
+        return attrs

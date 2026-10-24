@@ -301,7 +301,7 @@ from apps.analytics.models import UserLoginLocation
 from apps.analytics.serializers import UserLoginLocationSerializer
 
 USER_LOCATIONS_CACHE_KEY_PREFIX = 'curio_admin_user_locations'
-USER_LOCATIONS_CACHE_TIMEOUT = 604800  # 7 days (event-driven invalidation via signals)
+USER_LOCATIONS_CACHE_TIMEOUT = 120  # 2 minutes auto-expiry + instant event-driven invalidation
 
 class UserLoginLocationListView(generics.ListAPIView):
     """

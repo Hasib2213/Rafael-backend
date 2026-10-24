@@ -8,14 +8,34 @@ class ActivityAuditLogSerializer(serializers.ModelSerializer):
     plan = serializers.CharField(source='user.plan', read_only=True)
     avatar_url = serializers.SerializerMethodField()
     date_time = serializers.SerializerMethodField()
+    ip_address = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
 
     class Meta:
         model = ActivityAuditLog
         fields = [
             'id', 'name', 'email', 'plan', 'activity_type',
             'description', 'rating', 'date_time', 'created_at',
-            'avatar_url'
+            'avatar_url', 'ip_address', 'location'
         ]
+
+    def get_ip_address(self, obj):
+        try:
+            if hasattr(obj.user, 'location_profile') and obj.user.location_profile:
+                return obj.user.location_profile.ip_address or '127.0.0.1'
+        except Exception:
+            pass
+        return '127.0.0.1'
+
+    def get_location(self, obj):
+        try:
+            if hasattr(obj.user, 'location_profile') and obj.user.location_profile:
+                loc = obj.user.location_profile
+                if loc.city and loc.country:
+                    return f"{loc.city}, {loc.country}"
+        except Exception:
+            pass
+        return 'Local'
 
     def get_avatar_url(self, obj):
         if hasattr(obj, 'user') and obj.user:

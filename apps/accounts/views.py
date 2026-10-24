@@ -468,3 +468,104 @@ class NotificationMarkAllReadView(APIView):
         ).update(is_read=True)
         return Response({"message": "All notifications marked as read."})
 
+
+
+import requests
+from django.conf import settings
+from apps.accounts.serializers import GoogleAuthSerializer
+
+class GoogleAuthView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data["token"]
+
+        # Verify token with Google API
+        try:
+            google_resp = requests.get(
+                f"https://oauth2.googleapis.com/tokeninfo?id_token={token}",
+                timeout=5.0
+            )
+            if google_resp.status_code != 200:
+                return Response({"detail": "Invalid Google credential token."}, status=status.HTTP_400_BAD_REQUEST)
+            payload = google_resp.json()
+        except Exception as e:
+            return Response({"detail": f"Failed to verify Google token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate audience
+        client_id = getattr(settings, "GOOGLE_CLIENT_ID", None)
+        if not client_id:
+            client_id = os.getenv("GOOGLE_CLIENT_ID")
+        if client_id and payload.get("aud") != client_id and payload.get("azp") != client_id:
+            return Response({"detail": "Token audience does not match configured Google Client ID."}, status=status.HTTP_400_BAD_REQUEST)
+
+        email = payload.get("email", "").strip().lower()
+        if not email:
+            return Response({"detail": "Email not provided by Google."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(email__iexact=email).first()
+        picture = payload.get("picture", "")
+
+        if not user:
+            first_name = payload.get("given_name") or payload.get("name", "").split(" ")[0] or ""
+            last_name = payload.get("family_name") or ""
+            if not last_name and " " in payload.get("name", ""):
+                last_name = " ".join(payload.get("name", "").split(" ")[1:])
+
+            user = User.objects.create_user(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                role="user",
+                plan="Free",
+                is_active=True
+            )
+            user.set_unusable_password()
+            if picture:
+                user.avatar_url = picture
+            user.save()
+
+            try:
+                from apps.analytics.models import ActivityAuditLog
+                user_name = user.get_full_name() or user.email
+                ActivityAuditLog.objects.create(
+                    user=user,
+                    activity_type="New User Registered (Google)",
+                    description=f"{user_name} joined as Free member via Google"
+                )
+            except Exception:
+                pass
+        else:
+            if picture and not user.avatar and not user.avatar_url:
+                user.avatar_url = picture
+                user.save(update_fields=["avatar_url"])
+
+        if user.is_suspended:
+            reason = user.suspension_reason or "Contact support"
+            return Response(
+                {"detail": f"Account is suspended: {reason}"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            from apps.analytics.geo_service import record_user_login_location
+            record_user_login_location(user, request)
+        except Exception:
+            pass
+
+        try:
+            from apps.analytics.signals import bust_user_profile_cache
+            bust_user_profile_cache(user.id)
+        except Exception:
+            pass
+
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": UserSerializer(user).data
+        }, status=status.HTTP_200_OK)
